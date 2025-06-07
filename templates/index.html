@@ -1,0 +1,2182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ego AI: Your Premium Coding Assistant</title>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Highlight.js CSS Theme (VS Code Atom One Dark) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    
+    <!-- Google Fonts (Montserrat for headings, Poppins for body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* All CSS from static/css/style.css goes here */
+        :root {
+            --bg-dark: #101010; /* Very dark background */
+            --primary-green: #3DED97; /* Bright, energetic green for accents */
+            --secondary-blue: #00BFFF; /* Vibrant sky blue for secondary highlights/borders */
+            --text-light: #E0E0E0; /* Light gray for general text */
+            --text-dark: #A0A0A0; /* Darker gray for less prominent text */
+            --input-bg: #1A1A1A; /* Slightly lighter dark for input areas */
+            --border-color: #2D2D2D; /* Subtle dark border */
+            --shadow-light: rgba(0, 0, 0, 0.4); /* General box shadow */
+            --hover-bg: #222222; /* Hover state background */
+            --active-tab-bg: #252525; /* Background for active code tab */
+            --border-radius: 12px; /* More rounded corners for modern look */
+            --transition-speed: 0.3s;
+            --font-heading: 'Montserrat', sans-serif;
+            --font-body: 'Poppins', sans-serif;
+            --font-code: 'Fira Code', 'Roboto Mono', monospace; /* Good monospaced font for code */
+        }
+
+        /* Basic Reset & Body Styling */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh; /* Full viewport height */
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+            font-size: 16px;
+            line-height: 1.6;
+            background-image: radial-gradient(circle at top left, rgba(61, 237, 151, 0.08), transparent 40%),
+                              radial-gradient(circle at bottom right, rgba(0, 191, 255, 0.08), transparent 40%);
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+
+        /* Main Container Layout */
+        .main-container {
+            width: 90%;
+            max-width: 1400px;
+            margin-top: 40px;
+            margin-bottom: 40px; /* Reduced since input is no longer floating */
+            position: relative;
+            padding: 0 20px; /* Internal padding */
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Logo and Branding */
+        .logo {
+            font-family: var(--font-heading);
+            font-size: 3.5em;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 60px;
+            color: var(--text-light);
+            animation: slideDown 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Spring-like animation */
+            text-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo .highlight-green {
+            color: var(--primary-green);
+            text-shadow: 0 0 15px rgba(61, 237, 151, 0.5); /* Glow effect */
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-50px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Chat History (Default Layout) */
+        .chat-history {
+            max-width: 900px;
+            margin: 0 auto 50px auto;
+            display: flex;
+            flex-direction: column;
+            gap: 30px; /* More space between messages */
+            transition: all var(--transition-speed) ease-in-out;
+            min-height: 200px; /* Prevent layout collapse */
+        }
+
+        .chat-history.hidden {
+            display: none;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .user-message, .ego-message {
+            padding: 20px 30px;
+            border-radius: var(--border-radius);
+            max-width: 80%; /* Slightly smaller max width */
+            position: relative;
+            word-wrap: break-word;
+            box-shadow: 0 6px 20px var(--shadow-light);
+            animation: messageSlideIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            transform: translateY(20px);
+            opacity: 0;
+        }
+
+        @keyframes messageSlideIn {
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .user-message {
+            background-color: var(--secondary-blue);
+            color: #fff;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px; /* Corner "cut" */
+            font-weight: 500;
+        }
+
+        .ego-message {
+            background-color: var(--input-bg);
+            color: var(--text-light);
+            align-self: flex-start;
+            border: 1px solid var(--border-color);
+            border-top-left-radius: 4px; /* Corner "cut" */
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .ego-message.welcome-message {
+            margin-top: 40px;
+            animation-delay: 0.5s; /* Delay welcome message appearance */
+        }
+
+        .ego-icon {
+            font-size: 2em;
+            color: var(--primary-green);
+            margin-right: 18px;
+            min-width: 35px; /* Ensure icon has space */
+            text-align: center;
+            transition: color var(--transition-speed) ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ego-icon:hover {
+            color: var(--secondary-blue); /* subtle interaction */
+        }
+        
+        .ego-icon svg {
+            width: 35px;
+            height: 35px;
+        }
+
+        .message-content {
+            flex-grow: 1;
+        }
+
+        /* Input Container (for default layout) */
+        .floating-input-container {
+            position: static;
+            margin: 30px auto;
+            width: 90%;
+            max-width: 1000px; /* Slightly wider */
+            background-color: var(--input-bg);
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 40px var(--shadow-light);
+            display: flex;
+            flex-direction: column;
+            padding: 20px; /* More padding */
+            gap: 15px; /* More space between textboxes */
+            transition: all var(--transition-speed) ease;
+            z-index: 1000;
+            border: 1px solid var(--border-color);
+        }
+        
+        /* Image upload button and preview */
+        .image-upload-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border-color);
+        }
+        
+        .image-upload-btn {
+            background-color: var(--hover-bg);
+            color: var(--text-light);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius) / 2;
+            padding: 8px 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all var(--transition-speed) ease;
+            font-size: 0.9em;
+        }
+        
+        .image-upload-btn:hover {
+            background-color: var(--active-tab-bg);
+            border-color: var(--primary-green);
+        }
+        
+        .image-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .image-preview {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: var(--border-radius) / 2;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+        
+        .image-preview-wrapper {
+            position: relative;
+        }
+        
+        .remove-image-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: var(--input-bg);
+            color: var(--text-light);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.8em;
+            z-index: 1;
+        }
+        
+        .remove-image-btn:hover {
+            background-color: #ff4d4d;
+            color: white;
+        }
+
+        .floating-input-container.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(50px);
+            display: none;
+        }
+        .floating-input-container.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+            display: flex;
+        }
+
+        textarea.floating-input {
+            width: 100%;
+            padding: 15px 20px; /* More padding */
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius) / 2; /* Half rounded for inside input */
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: var(--font-body);
+            font-size: 1.05em;
+            resize: vertical; /* Allow vertical resizing for user convenience */
+            min-height: 50px;
+            max-height: 300px; /* Limit expansion */
+            outline: none;
+            transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+        }
+
+        textarea.floating-input:focus {
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 4px rgba(61, 237, 151, 0.3); /* Green glow */
+        }
+
+        textarea#main-prompt-input {
+            min-height: 50px;
+            max-height: 120px;
+        }
+
+        textarea#code-context-input {
+            min-height: 80px;
+            max-height: 200px;
+            border-top: 1px dashed var(--border-color); /* Dotted separator */
+            padding-top: 15px;
+            margin-top: 5px; /* Adjust spacing */
+        }
+
+        .send-btn {
+            position: absolute;
+            bottom: 15px; /* Positioned relative to container */
+            right: 35px;
+            background-color: var(--primary-green);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 55px; /* Larger button */
+            height: 55px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 1.4em; /* Larger icon */
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+            transition: background-color var(--transition-speed) ease, transform 0.2s ease, box-shadow var(--transition-speed) ease;
+            z-index: 1001; /* Above textbox */
+        }
+
+        .send-btn:hover {
+            background-color: #30C77A; /* Darker green on hover */
+            transform: translateY(-3px) scale(1.05); /* Lift and grow */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .send-btn:active {
+            transform: translateY(0) scale(1);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            background-color: #29b26e;
+        }
+
+        /* Split Layout (Two Panels) */
+        .split-layout {
+            display: flex;
+            gap: 30px;
+            height: calc(100vh - 120px); /* Full viewport height minus header and base for main input */
+            position: sticky; /* Make it stick when scrolling if desired */
+            top: 40px;
+            transition: all var(--transition-speed) ease-in-out;
+            opacity: 0;
+            transform: translateY(20px);
+            width: 100%;
+        }
+
+        .split-layout.active {
+            opacity: 1;
+            transform: translateY(0);
+            display: flex; /* Override hidden */
+        }
+
+        .split-layout.hidden {
+            display: none;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .left-panel, .right-panel {
+            flex: 1;
+            background-color: var(--input-bg);
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 25px var(--shadow-light);
+            border: 1px solid var(--border-color);
+            position: relative;
+            max-height: calc(100vh - 120px - 50px); /* Adjust height for consistent display */
+            overflow: hidden; /* Important for inner scrollbars */
+            min-width: 450px;
+        }
+
+        .left-panel {
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-history-split {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            padding-right: 15px; /* Space for scrollbar */
+            padding-bottom: 20px; /* Space before followup input if any */
+        }
+
+        .chat-history-split .user-message,
+        .chat-history-split .ego-message {
+            max-width: 100%;
+            /* Override fixed positioning of messages in split panel if needed */
+        }
+
+        /* Custom Scrollbar Styles (for all scrollable elements) */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px; /* For horizontal scrollbars */
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--input-bg);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 10px;
+            border: 2px solid var(--input-bg); /* Padding inside the thumb */
+            transition: background 0.3s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-dark);
+        }
+
+        /* Right Panel: Code Display */
+        .code-output-container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Code Display Tabs */
+        .code-tabs {
+            display: flex;
+            background-color: var(--active-tab-bg);
+            border-bottom: 1px solid var(--border-color);
+            border-top-left-radius: var(--border-radius);
+            border-top-right-radius: var(--border-radius);
+            overflow: hidden;
+            height: 50px; /* Taller tabs */
+            align-items: center;
+            padding-left: 20px; /* Align tabs */
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* Subtle tab shadow */
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .code-tabs.hidden {
+            display: none;
+        }
+
+        .tab-button {
+            padding: 12px 25px; /* More padding */
+            background-color: transparent;
+            border: none;
+            color: var(--text-dark);
+            font-size: 1.05em;
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            border-bottom: 3px solid transparent; /* Thicker active border */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-body);
+            font-weight: 500;
+        }
+
+        .tab-button.active {
+            color: var(--primary-green);
+            border-bottom-color: var(--primary-green);
+            background-color: var(--hover-bg); /* Darker active background */
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1) inset; /* Inner shadow for active tab */
+        }
+
+        .tab-button:hover:not(.active) {
+            color: var(--text-light);
+            background-color: var(--hover-bg);
+        }
+
+        /* Code Display Area */
+        #code-display {
+            padding: 20px; /* Padding for code content */
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        #code-display.hidden, #preview-display.hidden {
+            display: none;
+        }
+
+        /* Pre and Code for Highlight.js */
+        .code-output-container pre {
+            background-color: transparent !important; /* Override highlight.js default */
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            margin: 0;
+            height: 100%; /* Important for code scrolling */
+            outline: none; /* Remove outline when focused */
+            position: relative;
+        }
+
+        /* Style for editable pre element */
+        .code-output-container pre[contenteditable="true"] {
+            cursor: text;
+            border-left: 3px solid var(--primary-green); /* Visual indicator that it's editable */
+            padding-left: 15px; /* Add padding for the border */
+            transition: background-color 0.3s ease;
+        }
+
+        .code-output-container pre[contenteditable="true"]:focus {
+            background-color: rgba(61, 237, 151, 0.05); /* Subtle highlight when focused */
+            box-shadow: 0 0 10px rgba(61, 237, 151, 0.1); /* Subtle glow effect */
+        }
+
+        .code-output-container pre[contenteditable="true"]::after {
+            content: "✏️ Click to edit";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.8em;
+            color: var(--text-dark);
+            opacity: 0.7;
+            pointer-events: none; /* Don't interfere with editing */
+            font-family: var(--font-body);
+        }
+
+        .code-output-container code {
+            background-color: transparent !important; /* Override highlight.js default */
+            padding: 0;
+            color: var(--text-light); /* Base text color for code */
+            display: block; /* Ensure full width */
+            overflow-x: auto; /* Horizontal scroll for long lines */
+            white-space: pre-wrap; /* Wrap lines that are too long */
+            font-family: var(--font-code);
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        /* Markdown generated content specific styles within messages */
+        .message-content h1, .message-content h2, .message-content h3, .message-content h4 {
+            color: var(--primary-green);
+            margin-top: 25px;
+            margin-bottom: 12px;
+            font-family: var(--font-heading);
+            font-weight: 700;
+        }
+
+        .message-content h1 { font-size: 1.8em; }
+        .message-content h2 { font-size: 1.5em; }
+        .message-content h3 { font-size: 1.2em; }
+        .message-content p {
+            line-height: 1.7;
+            margin-bottom: 15px;
+        }
+
+        .message-content pre {
+            background-color: #0F0F0F; /* Slightly darker than input bg */
+            padding: 15px 20px;
+            border-radius: var(--border-radius) / 2;
+            border: 1px dashed var(--border-color);
+            overflow-x: auto;
+            margin: 20px 0;
+            font-size: 0.9em;
+            font-family: var(--font-code);
+        }
+
+        .message-content code:not(pre code) { /* Inline code */
+            font-family: var(--font-code);
+            color: var(--secondary-blue);
+            background-color: rgba(0, 191, 255, 0.15); /* Light blue highlight for inline code */
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+
+        .message-content ul, .message-content ol {
+            margin: 20px 0;
+            padding-left: 30px;
+        }
+
+        .message-content li {
+            margin-bottom: 8px;
+            padding-left: 5px;
+        }
+
+        .message-content strong {
+            color: var(--primary-green);
+        }
+        
+        /* Terminal output display - Enhanced styling */
+        .terminal-output {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            background-color: #1a1a1a;
+            color: #f8f8f2;
+            padding: 12px;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            margin: 15px 0;
+            max-height: 350px;
+            overflow-y: auto;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            border: 1px solid #333;
+            position: relative;
+        }
+        
+        .terminal-output::before {
+            content: 'Terminal';
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background-color: #1a1a1a;
+            padding: 0 8px;
+            font-size: 12px;
+            color: #bd93f9;
+            border-radius: 3px;
+            border: 1px solid #333;
+        }
+        
+        .terminal-error {
+            color: #ff5555;
+            padding: 5px;
+            border-left: 3px solid #ff5555;
+            margin: 5px 0;
+            background-color: rgba(255, 85, 85, 0.1);
+        }
+        
+        .terminal-success {
+            color: #50fa7b;
+            padding: 5px;
+            border-left: 3px solid #50fa7b;
+            margin: 5px 0;
+        }
+        
+        .terminal-command {
+            color: #bd93f9;
+            font-weight: bold;
+            margin-bottom: 8px;
+            padding: 8px;
+            background-color: rgba(189, 147, 249, 0.1);
+            border-radius: 4px;
+            border-left: 3px solid #bd93f9;
+        }
+        
+        .terminal-exit-code {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        
+        .terminal-exit-code.success {
+            background-color: rgba(80, 250, 123, 0.2);
+            color: #50fa7b;
+        }
+        
+        .terminal-exit-code.error {
+            background-color: rgba(255, 85, 85, 0.2);
+            color: #ff5555;
+        }
+
+        .message-content a {
+            color: var(--secondary-blue);
+            text-decoration: none;
+            transition: color var(--transition-speed) ease;
+        }
+
+        .message-content a:hover {
+            color: var(--primary-green);
+            text-decoration: underline;
+        }
+
+        /* Mermaid Diagram styling */
+        .mermaid-diagram pre {
+            background-color: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            color: var(--text-light); /* Make sure text in code block within mermaid-diagram is readable */
+        }
+        .mermaid-diagram .mermaid {
+            /* Style mermaid container if needed, e.g., borders */
+            background-color: #202020; /* Ensure a background for the diagram itself */
+            padding: 15px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+        }
+        .mermaid-diagram pre.hidden-from-syntax-highlighter {
+            display: block; /* ensure the block is rendered for mermaid */
+            color: var(--primary-green); /* Text within Mermaid pre could be green */
+        }
+
+
+        /* Preview Display */
+        #html-preview-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: #fff; /* Ensure white background for HTML preview */
+            border-radius: var(--border-radius);
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Floating Follow-up Input for Split Layout */
+        .floating-followup-input-container {
+            position: sticky; /* Sticky relative to its parent .right-panel */
+            bottom: 0;
+            width: 100%;
+            background-color: var(--input-bg);
+            border-top: 1px solid var(--border-color);
+            padding: 15px 20px; /* Matches main input padding */
+            box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.3);
+            border-bottom-left-radius: var(--border-radius);
+            border-bottom-right-radius: var(--border-radius);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            transition: opacity var(--transition-speed) ease, transform var(--transition-speed) ease;
+        }
+
+        .floating-followup-input-container.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(30px);
+        }
+        .floating-followup-input-container.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        #followup-prompt-input {
+            flex-grow: 1;
+            min-height: 50px;
+            max-height: 150px;
+            width: calc(100% - 65px); /* Account for button size */
+        }
+
+        #followup-send-btn {
+            position: static; /* Let flexbox handle position */
+            transform: none; /* Remove transformations for standard button */
+            bottom: auto; /* Reset */
+            right: auto; /* Reset */
+            flex-shrink: 0; /* Prevent it from shrinking */
+            box-shadow: none; /* Only if inside container, not global style */
+        }
+        #followup-send-btn:hover {
+            transform: translateY(-2px); /* Slight lift */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Shadow on hover */
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid var(--primary-green);
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            animation: spin 1s linear infinite;
+        }
+
+        .send-btn.sending {
+            background-color: var(--hover-bg);
+            cursor: not-allowed;
+            pointer-events: none; /* Disable clicks */
+            transform: none !important; /* Override hover/active transformations */
+            box-shadow: none !important;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+
+        /* Media Queries for Responsiveness */
+        @media (max-width: 1200px) {
+            .main-container {
+                width: 95%;
+                margin-top: 20px;
+            }
+            .split-layout {
+                height: auto;
+                flex-direction: column;
+                gap: 20px;
+            }
+            .left-panel, .right-panel {
+                min-width: unset;
+                width: 100%;
+                max-height: 600px; /* Constrain height of stacked panels */
+            }
+            .floating-input-container {
+                max-width: 95%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2.8em;
+                margin-bottom: 40px;
+            }
+            .chat-history {
+                margin-bottom: 20px;
+                gap: 20px;
+            }
+            .user-message, .ego-message {
+                padding: 15px 25px;
+                max-width: 95%; /* More width for small screens */
+            }
+            .ego-icon {
+                font-size: 1.8em;
+                margin-right: 12px;
+            }
+            .floating-input-container {
+                padding: 15px;
+                bottom: 15px;
+                flex-direction: column; /* Stack prompt and code input vertically */
+                gap: 10px;
+            }
+            textarea.floating-input {
+                min-height: 40px;
+                padding: 12px 15px;
+            }
+            textarea#code-context-input {
+                border-top: 1px dashed var(--border-color); /* Keep border */
+                margin-top: 5px;
+                padding-top: 10px;
+                min-height: 70px;
+            }
+            .send-btn {
+                width: 48px; /* Slightly smaller button */
+                height: 48px;
+                font-size: 1.2em;
+                bottom: 25px; /* Adjust if stack */
+                right: 25px; /* Adjust if stack */
+                top: auto;
+            }
+            .floating-followup-input-container {
+                padding: 10px 15px;
+            }
+            #followup-prompt-input {
+                min-height: 40px;
+            }
+            #followup-send-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 1.1em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-container {
+                padding: 0 10px;
+                margin-bottom: 100px;
+            }
+            .logo {
+                font-size: 2.2em;
+            }
+            .user-message, .ego-message {
+                padding: 12px 18px;
+                font-size: 0.95em;
+            }
+            .floating-input-container, .floating-followup-input-container {
+                border-radius: 10px;
+                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Logo/Branding -->
+        <div class="logo">
+            <svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 10px;">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#3DED97" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 17L12 22L22 17" stroke="#3DED97" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 12L12 17L22 12" stroke="#3DED97" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="12" cy="12" r="3" fill="#00BFFF" stroke="#3DED97" stroke-width="1"/>
+            </svg>
+            Ego<span class="highlight-green">.AI</span>
+        </div>
+
+        <!-- Default Chat Interface (initially visible) -->
+        <div id="chat-history" class="chat-history">
+            <div class="ego-message welcome-message">
+                <div class="ego-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="12" cy="12" r="3" fill="#00BFFF" stroke="currentColor" stroke-width="1"/>
+                    </svg>
+                </div>
+                <div class="message-content">
+                    Hello! I'm Ego, your premium AI coding assistant.
+                    I excel in frontend, AI/ML, app development, and backend.
+                    <br><br>
+                    How can I help you today?
+                    I can <span class="highlight-green">generate code</span>, <span class="highlight-green">explain code</span>, <span class="highlight-green">teach languages</span>, <span class="highlight-green">analyze images</span>, and even create <span class="highlight-green">flowcharts</span>!
+                </div>
+            </div>
+            <!-- Dynamic chat messages will be appended here -->
+        </div>
+
+        <!-- Split Layout for Code Generation (initially hidden) -->
+        <div id="split-layout" class="split-layout hidden">
+            <!-- Left Panel for Context/Chat History -->
+            <div class="left-panel">
+                <div class="chat-history-split" id="chat-history-split">
+                    <!-- Specific chat history related to the current code context -->
+                </div>
+            </div>
+            <!-- Right Panel for Code Display / Preview -->
+            <div class="right-panel">
+                <div class="code-output-container">
+                    <div id="code-tabs" class="code-tabs hidden">
+                        <button class="tab-button active" data-target="code-display"><i class="fas fa-code"></i> Code</button>
+                        <button class="tab-button" data-target="preview-display"><i class="fas fa-eye"></i> Preview</button>
+                    </div>
+                    <div id="code-display" class="code-display">
+                        <pre contenteditable="true"><code class="language-plaintext" id="highlighted-code"></code></pre>
+                    </div>
+                    <div id="preview-display" class="preview-display hidden">
+                        <iframe id="html-preview-frame"></iframe>
+                    </div>
+                </div>
+                <!-- Floating Follow-up Prompt for two-panel mode -->
+                <div class="floating-followup-input-container hidden" id="followup-input-container">
+                    <textarea id="followup-prompt-input" class="floating-input" placeholder="Ask a follow-up question or request a modification..." rows="1"></textarea>
+                    <button class="send-btn" id="followup-send-btn"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Main Prompt Container (for default layout) -->
+        <div id="main-input-container" class="floating-input-container default-layout active">
+            <textarea id="main-prompt-input" class="floating-input" placeholder="Ask Ego anything about coding, AI/ML, app development..." rows="1"></textarea>
+            <button class="send-btn" id="main-send-btn"><i class="fas fa-paper-plane"></i></button>
+            <textarea id="code-context-input" class="floating-input" placeholder="Optional: Paste code here for Ego to explain/analyze..." rows="3"></textarea>
+            
+            <!-- Image Upload Section -->
+            <div class="image-upload-container">
+                <label for="image-upload" class="image-upload-btn">
+                    <i class="fas fa-image"></i> Upload Image
+                </label>
+                <input type="file" id="image-upload" accept="image/*" multiple style="display: none;">
+                <span class="image-upload-info" style="color: var(--text-dark); font-size: 0.9em;">Upload screenshots, error messages, or UI designs</span>
+                <div id="image-preview-container" class="image-preview-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <!-- Highlight.js for code syntax highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Include languages you expect (more can be added) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js"></script> <!-- for HTML/XML -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+    <script>hljs.highlightAll();</script> <!-- Auto-highlights initial static content -->
+
+    <!-- Mermaid.js for flowchart rendering (uses module for esm import) -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.js';
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'dark', 
+            securityLevel: 'loose', // Allows rendering complex diagrams, be cautious with untrusted content
+            fontFamily: 'Poppins, sans-serif'
+        });
+        window.mermaid = mermaid; // Make available globally for dynamic rendering
+    </script>
+
+    <script>
+        /* All JavaScript from static/js/script.js goes here */
+        document.addEventListener('DOMContentLoaded', () => {
+            const mainPromptInput = document.getElementById('main-prompt-input');
+            const codeContextInput = document.getElementById('code-context-input');
+            const mainSendBtn = document.getElementById('main-send-btn');
+            const chatHistory = document.getElementById('chat-history');
+            const chatHistorySplit = document.getElementById('chat-history-split');
+            const splitLayout = document.getElementById('split-layout');
+            const mainInputContainer = document.getElementById('main-input-container');
+            const followupPromptInput = document.getElementById('followup-prompt-input');
+            const followupSendBtn = document.getElementById('followup-send-btn');
+            const followupInputContainer = document.getElementById('followup-input-container');
+            const highlightedCodeBlock = document.getElementById('highlighted-code');
+            const codeTabs = document.getElementById('code-tabs');
+            const codeDisplay = document.getElementById('code-display');
+            const previewDisplay = document.getElementById('preview-display');
+            const htmlPreviewFrame = document.getElementById('html-preview-frame');
+            
+            let currentLayout = 'default'; // 'default' or 'two-panel'
+            let currentDisplayedCode = ''; // Stores the code displayed in the right panel for modification requests
+            let currentCodeLanguage = 'plaintext'; // Stores the language of current displayed code
+
+            // --- Helper Functions ---
+
+            function displayMessage(role, content, targetContainer, prepend = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add(`${role}-message`);
+                
+                if (role === 'ego') {
+                    const iconDiv = document.createElement('div');
+                    iconDiv.classList.add('ego-icon');
+                    iconDiv.innerHTML = `
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="12" cy="12" r="3" fill="#00BFFF" stroke="currentColor" stroke-width="1"/>
+                        </svg>
+                    `;
+                    messageDiv.appendChild(iconDiv);
+                    
+                    const messageContentDiv = document.createElement('div');
+                    messageContentDiv.classList.add('message-content');
+                    messageContentDiv.innerHTML = content; // Content is already markdown-rendered HTML
+                    messageDiv.appendChild(messageContentDiv);
+
+                    // Re-highlight any code blocks within explanation (if not highlighted by hljs automatically)
+                    messageContentDiv.querySelectorAll('pre code').forEach(block => {
+                        // Mermaid specific handling: skip syntax highlighting for mermaid pre tags
+                        if (block.classList.contains('mermaid') || block.classList.contains('hidden-from-syntax-highlighter')) {
+                            // Do nothing for mermaid blocks, they are handled by mermaid.js
+                            return;
+                        }
+                        // Attempt to auto-detect language or default to plaintext if not specified
+                        if (!block.className.includes('language-')) {
+                            block.classList.add('language-plaintext'); 
+                        }
+                        hljs.highlightElement(block);
+                    });
+
+                    // Re-render Mermaid diagrams dynamically after they are added
+                    messageContentDiv.querySelectorAll('pre.mermaid').forEach(pre => {
+                        // Ensure mermaid.js is loaded before trying to render
+                        if (window.mermaid) {
+                            // Get raw text content and remove markdown code block delimiters
+                            const graphDefinition = pre.textContent.replace(/```mermaid\n|```/g, '').trim();
+                            try {
+                                // Dynamically render the mermaid diagram into the <pre> tag
+                                // Using unique ID to avoid conflicts
+                                const renderId = 'mermaid-' + Date.now() + Math.random().toString(36).substr(2, 9);
+                                pre.id = renderId;
+                                mermaid.render(renderId, graphDefinition)
+                                    .then(({ svg, bindFunctions }) => {
+                                        pre.innerHTML = svg;
+                                        pre.classList.remove('hidden-from-syntax-highlighter'); // Make it visible if successfully rendered
+                                        if (bindFunctions) bindFunctions();
+                                    })
+                                    .catch(err => {
+                                        console.error('Mermaid render error:', err);
+                                        pre.textContent = `Error rendering flowchart. Mermaid Syntax Error:\n\n${graphDefinition}\n\n${err.message || err}`;
+                                        pre.style.color = 'red';
+                                    });
+                            } catch (e) {
+                                console.error("Error with Mermaid render call setup:", e);
+                                pre.textContent = `Error: Problem with Mermaid rendering.\n\n${graphDefinition}`;
+                                pre.style.color = 'red';
+                            }
+                        } else {
+                            console.warn("Mermaid.js not loaded, skipping flowchart rendering.");
+                        }
+                    });
+
+                } else { // user message
+                    messageDiv.innerHTML = content;
+                }
+                
+                if (prepend) {
+                    targetContainer.prepend(messageDiv);
+                } else {
+                    targetContainer.appendChild(messageDiv);
+                }
+                // Auto-scroll to bottom with a slight delay for animation
+                setTimeout(() => {
+                    targetContainer.scrollTop = targetContainer.scrollHeight;
+                }, 100); 
+            }
+
+            function toggleLayout(layout) {
+                if (layout === 'two-panel' && currentLayout !== 'two-panel') {
+                    mainInputContainer.classList.remove('active');
+                    mainInputContainer.classList.add('hidden');
+                    chatHistory.classList.add('hidden');
+                    
+                    splitLayout.classList.remove('hidden');
+                    splitLayout.classList.add('active');
+                    followupInputContainer.classList.remove('hidden');
+                    followupInputContainer.classList.add('active');
+                    
+                    // Move current prompt to left panel chat history (if any)
+                    if (mainPromptInput.value.trim() !== '') {
+                        displayMessage('user', mainPromptInput.value.trim(), chatHistorySplit);
+                    }
+                    mainPromptInput.value = ''; // Clear main prompt
+                    codeContextInput.value = ''; // Clear code context
+
+                    // Auto-grow adjustment for new inputs when layout changes
+                    autoGrow(followupPromptInput);
+                    
+                    currentLayout = 'two-panel';
+                } else if (layout === 'default' && currentLayout !== 'default') {
+                    mainInputContainer.classList.add('active');
+                    mainInputContainer.classList.remove('hidden');
+                    chatHistory.classList.remove('hidden');
+                    
+                    splitLayout.classList.add('hidden');
+                    splitLayout.classList.remove('active');
+                    followupInputContainer.classList.add('hidden');
+                    followupInputContainer.classList.remove('active');
+                    
+                    // Clear content of the split layout when switching back
+                    chatHistorySplit.innerHTML = ''; 
+                    highlightedCodeBlock.innerHTML = '';
+                    currentDisplayedCode = '';
+                    currentCodeLanguage = 'plaintext';
+                    
+                    resetHtmlTabs(); // Ensure tabs are reset
+
+                    // Auto-grow adjustment for new inputs when layout changes
+                    autoGrow(mainPromptInput);
+                    autoGrow(codeContextInput);
+
+                    currentLayout = 'default';
+                }
+                updateSendButtonVisibility();
+                updateSendButtonPlacement();
+                
+                // Force a scroll to the relevant part of the page based on layout
+                if (currentLayout === 'default') {
+                    chatHistory.scrollTop = chatHistory.scrollHeight; // Scroll to bottom of chat history
+                    // No need to scroll to input container since it's now in the normal document flow
+                } else {
+                    splitLayout.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    chatHistorySplit.scrollTop = chatHistorySplit.scrollHeight;
+                }
+            }
+
+            function resetHtmlTabs() {
+                codeTabs.classList.add('hidden');
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                // Default to 'Code' tab active state
+                document.querySelector('.tab-button[data-target="code-display"]').classList.add('active');
+                codeDisplay.classList.remove('hidden');
+                previewDisplay.classList.add('hidden');
+                htmlPreviewFrame.srcdoc = ''; // Clear iframe content
+            }
+
+            function showSpinner(btnElem) {
+                btnElem.classList.add('sending');
+                btnElem.innerHTML = `<div class="loading-spinner"></div>`;
+            }
+
+            function hideSpinner(btnElem) {
+                btnElem.classList.remove('sending');
+                btnElem.innerHTML = `<i class="fas fa-paper-plane"></i>`;
+            }
+
+            async function sendMessage(prompt, codeContext = '', isFollowupOnCode = false) {
+                const inputToClear = isFollowupOnCode ? followupPromptInput : mainPromptInput;
+                const btnToSend = isFollowupOnCode ? followupSendBtn : mainSendBtn;
+                
+                displayMessage('user', prompt, isFollowupOnCode ? chatHistorySplit : chatHistory);
+                showSpinner(btnToSend);
+
+                try {
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            prompt: prompt,
+                            code_textbox_content: codeContext,
+                            current_displayed_code: currentDisplayedCode,
+                            is_followup_on_code: isFollowupOnCode
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.type === 'error') {
+                        displayMessage('ego', `<span style="color:red;"><i class="fas fa-exclamation-triangle"></i> Error:</span> ${data.message}`, isFollowupOnCode ? chatHistorySplit : chatHistory);
+                        // Keep the current layout but maybe clear the displayed code area if the error pertains to a modification failing.
+                    } else if (data.layout === 'two-panel') {
+                        toggleLayout('two-panel');
+                        if (data.type === 'code' && data.code_raw) {
+                            // Update main code display
+                            highlightedCodeBlock.className = `language-${data.language}`;
+                            highlightedCodeBlock.textContent = data.code_raw;
+                            hljs.highlightElement(highlightedCodeBlock);
+                            
+                            currentDisplayedCode = data.code_raw; // Update for future modifications
+                            currentCodeLanguage = data.language; 
+
+                            // Handle HTML preview tab
+                            if (data.is_html_preview) {
+                                codeTabs.classList.remove('hidden');
+                                htmlPreviewFrame.srcdoc = data.code_raw; // Populate iframe for preview
+                            } else {
+                                resetHtmlTabs(); // Ensure tabs are hidden if not HTML content
+                            }
+                            // Display general message related to the code (if any) in the left panel
+                            if (data.message) {
+                                displayMessage('ego', data.message, chatHistorySplit);
+                            } else {
+                                // If no specific message, add a generic confirmation of code generation/modification
+                                displayMessage('ego', `I have generated/modified the code on the right panel.`, chatHistorySplit);
+                            }
+                        } else { // It's 'two-panel' but didn't return code, likely a textual response from Gemini while in two-panel mode.
+                             displayMessage('ego', data.message, chatHistorySplit);
+                             resetHtmlTabs(); // No code, so hide tabs.
+                        }
+                    } else { // default layout, for general explanations, learning, flowcharts etc.
+                        toggleLayout('default');
+                        displayMessage('ego', data.message, chatHistory);
+                        resetHtmlTabs(); // No code block in default layout context
+                    }
+                } catch (error) {
+                    console.error('Network or server error:', error);
+                    displayMessage('ego', `<span style="color:red;"><i class="fas fa-dizzy"></i> Oops!</span> It seems I lost connection to the server or encountered an unexpected issue: ${error.message}. Please try again.`, isFollowupOnCode ? chatHistorySplit : chatHistory);
+                } finally {
+                    hideSpinner(btnToSend);
+                    inputToClear.value = '';
+                    // Ensure context input is cleared after use
+                    if (!isFollowupOnCode) codeContextInput.value = ''; 
+                    updateSendButtonVisibility();
+                }
+            }
+
+            // --- Event Listeners and UI Management ---
+
+            // Manage send button visibility based on input content
+            function updateSendButtonVisibility() {
+                const mainPromptFilled = mainPromptInput.value.trim() !== '';
+                const codeContextFilled = codeContextInput.value.trim() !== '';
+                const followupPromptFilled = followupPromptInput.value.trim() !== '';
+                
+                if (currentLayout === 'default') {
+                    mainSendBtn.style.display = (mainPromptFilled || codeContextFilled) ? 'flex' : 'none';
+                } else { // two-panel layout
+                    // In two-panel layout, the main send button is never shown
+                    mainSendBtn.style.display = 'none';
+                    followupSendBtn.style.display = followupPromptFilled ? 'flex' : 'none';
+                }
+            }
+
+            // Auto-grow textareas
+            function autoGrow(element) {
+                element.style.height = 'auto'; // Reset height
+                element.style.height = element.scrollHeight + 'px';
+                if (parseInt(element.style.height) > parseInt(element.style.maxHeight)) {
+                    element.style.overflowY = 'scroll';
+                    element.style.height = element.style.maxHeight;
+                } else {
+                    element.style.overflowY = 'hidden';
+                }
+                updateSendButtonPlacement(); // Recalculate send button position after input height changes
+            }
+            
+            // Updates the position of the main send button (simplified for static container)
+            function updateSendButtonPlacement() {
+                if (currentLayout === 'default') {
+                    // With static positioning, we can use a simpler approach
+                    // The button is positioned relative to the container with CSS
+                    // We just need to ensure it's visible
+                    mainSendBtn.style.display = 'flex';
+                    mainSendBtn.style.right = '35px';
+                    mainSendBtn.style.bottom = '15px';
+                } else {
+                    // Follow-up button position is handled by CSS flexbox
+                    followupSendBtn.style.bottom = ''; 
+                    followupSendBtn.style.right = ''; 
+                }
+            }
+
+            // Initial event listener setup for input fields
+            [mainPromptInput, codeContextInput, followupPromptInput].forEach(input => {
+                input.addEventListener('input', () => {
+                    autoGrow(input);
+                    updateSendButtonVisibility();
+                });
+                // Initial auto-grow call for any pre-filled inputs
+                autoGrow(input);
+            });
+
+            // Main Prompt and Send button events
+            mainPromptInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (mainPromptInput.value.trim() !== '' || codeContextInput.value.trim() !== '') {
+                        sendMessage(mainPromptInput.value.trim(), codeContextInput.value.trim(), false);
+                    } else {
+                        alert("Please type a prompt or paste code.");
+                    }
+                }
+            });
+
+            mainSendBtn.addEventListener('click', () => {
+                if (mainPromptInput.value.trim() !== '' || codeContextInput.value.trim() !== '') {
+                    sendMessage(mainPromptInput.value.trim(), codeContextInput.value.trim(), false);
+                } else {
+                    alert("Please type a prompt or paste code.");
+                }
+            });
+
+            // Follow-up Prompt and Send button events
+            followupPromptInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (followupPromptInput.value.trim() !== '') {
+                        sendMessage(followupPromptInput.value.trim(), '', true); // true for isFollowup
+                    } else {
+                        alert("Please enter a follow-up question.");
+                    }
+                }
+            });
+
+            followupSendBtn.addEventListener('click', () => {
+                if (followupPromptInput.value.trim() !== '') {
+                    sendMessage(followupPromptInput.value.trim(), '', true);
+                } else {
+                    alert("Please enter a follow-up question.");
+                }
+            });
+
+            // Tab switching for code/preview in split layout
+            codeTabs.addEventListener('click', (e) => {
+                const targetBtn = e.target.closest('.tab-button');
+                if (targetBtn) {
+                    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                    targetBtn.classList.add('active');
+
+                    const targetDisplayId = targetBtn.dataset.target;
+
+                    if (targetDisplayId === 'code-display') {
+                        codeDisplay.classList.remove('hidden');
+                        previewDisplay.classList.add('hidden');
+                    } else if (targetDisplayId === 'preview-display') {
+                        codeDisplay.classList.add('hidden');
+                        previewDisplay.classList.remove('hidden');
+                        // Ensure iframe is up-to-date with currentDisplayedCode
+                        if (currentCodeLanguage.toLowerCase() === 'html' && htmlPreviewFrame.srcdoc !== currentDisplayedCode) {
+                            htmlPreviewFrame.srcdoc = currentDisplayedCode;
+                        }
+                    }
+                }
+            });
+
+            // Listen for resize to re-adjust floating elements and their sizes
+            window.addEventListener('resize', () => {
+                autoGrow(mainPromptInput);
+                autoGrow(codeContextInput);
+                autoGrow(followupPromptInput);
+                updateSendButtonPlacement();
+            });
+
+            // Image Upload Handling
+            const imageUploadInput = document.getElementById('image-upload');
+            const imagePreviewContainer = document.getElementById('image-preview-container');
+            let uploadedImages = [];
+            
+            imageUploadInput.addEventListener('change', (e) => {
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+                
+                // Process each selected file
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    if (!file.type.startsWith('image/')) continue;
+                    
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const imageData = event.target.result;
+                        uploadedImages.push({
+                            data: imageData,
+                            name: file.name,
+                            type: file.type
+                        });
+                        
+                        // Create preview
+                        const previewWrapper = document.createElement('div');
+                        previewWrapper.classList.add('image-preview-wrapper');
+                        
+                        const preview = document.createElement('img');
+                        preview.classList.add('image-preview');
+                        preview.src = imageData;
+                        preview.alt = file.name;
+                        preview.title = file.name;
+                        
+                        const removeBtn = document.createElement('button');
+                        removeBtn.classList.add('remove-image-btn');
+                        removeBtn.innerHTML = '×';
+                        removeBtn.addEventListener('click', () => {
+                            // Remove from array
+                            const index = uploadedImages.findIndex(img => img.data === imageData);
+                            if (index !== -1) {
+                                uploadedImages.splice(index, 1);
+                            }
+                            // Remove from DOM
+                            previewWrapper.remove();
+                        });
+                        
+                        previewWrapper.appendChild(preview);
+                        previewWrapper.appendChild(removeBtn);
+                        imagePreviewContainer.appendChild(previewWrapper);
+                    };
+                    reader.readAsDataURL(file);
+                }
+                
+                // Reset the input to allow selecting the same file again
+                e.target.value = '';
+            });
+            
+            // Modify sendMessage function to include images
+            const originalSendMessage = sendMessage;
+            sendMessage = async function(prompt, codeContext = '', isFollowupOnCode = false) {
+                const inputToClear = isFollowupOnCode ? followupPromptInput : mainPromptInput;
+                const btnToSend = isFollowupOnCode ? followupSendBtn : mainSendBtn;
+                
+                // Display user message
+                let userMessageContent = prompt;
+                
+                // If there are images, add placeholders in the message
+                if (uploadedImages.length > 0 && !isFollowupOnCode) {
+                    userMessageContent += '\n\n[Attached Images: ' + uploadedImages.length + ']';
+                }
+                
+                displayMessage('user', userMessageContent, isFollowupOnCode ? chatHistorySplit : chatHistory);
+                showSpinner(btnToSend);
+
+                try {
+                    // Prepare form data for multipart/form-data request with images
+                    const formData = new FormData();
+                    formData.append('prompt', prompt);
+                    formData.append('code_textbox_content', codeContext);
+                    formData.append('current_displayed_code', currentDisplayedCode);
+                    formData.append('is_followup_on_code', isFollowupOnCode);
+                    
+                    // Add images if any
+                    if (uploadedImages.length > 0 && !isFollowupOnCode) {
+                        uploadedImages.forEach((img, index) => {
+                            // Convert base64 to blob
+                            const byteString = atob(img.data.split(',')[1]);
+                            const mimeString = img.data.split(',')[0].split(':')[1].split(';')[0];
+                            const ab = new ArrayBuffer(byteString.length);
+                            const ia = new Uint8Array(ab);
+                            for (let i = 0; i < byteString.length; i++) {
+                                ia[i] = byteString.charCodeAt(i);
+                            }
+                            const blob = new Blob([ab], {type: mimeString});
+                            formData.append('images', blob, img.name);
+                        });
+                    }
+
+                    // Send request
+                    let response;
+                    if (uploadedImages.length > 0 && !isFollowupOnCode) {
+                        // Use multipart/form-data for image uploads
+                        response = await fetch('/chat', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        // Clear uploaded images after sending
+                        uploadedImages = [];
+                        imagePreviewContainer.innerHTML = '';
+                    } else {
+                        // Use JSON for text-only requests
+                        response = await fetch('/chat', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                prompt: prompt,
+                                code_textbox_content: codeContext,
+                                current_displayed_code: currentDisplayedCode,
+                                is_followup_on_code: isFollowupOnCode
+                            })
+                        });
+                    }
+
+                    const data = await response.json();
+
+                    if (data.type === 'error') {
+                        displayMessage('ego', `<span style="color:red;"><i class="fas fa-exclamation-triangle"></i> Error:</span> ${data.message}`, isFollowupOnCode ? chatHistorySplit : chatHistory);
+                        // Keep the current layout but maybe clear the displayed code area if the error pertains to a modification failing.
+                    } else if (data.layout === 'two-panel') {
+                        toggleLayout('two-panel');
+                        if (data.type === 'code' && data.code_raw) {
+                            // Update main code display
+                            highlightedCodeBlock.className = `language-${data.language}`;
+                            highlightedCodeBlock.textContent = data.code_raw;
+                            hljs.highlightElement(highlightedCodeBlock);
+                            
+                            currentDisplayedCode = data.code_raw; // Update for future modifications
+                            currentCodeLanguage = data.language; 
+
+                            // Handle HTML preview tab
+                            if (data.is_html_preview) {
+                                codeTabs.classList.remove('hidden');
+                                htmlPreviewFrame.srcdoc = data.code_raw; // Populate iframe for preview
+                            } else {
+                                resetHtmlTabs(); // Ensure tabs are hidden if not HTML content
+                            }
+                            // Display general message related to the code (if any) in the left panel
+                            if (data.message) {
+                                displayMessage('ego', data.message, chatHistorySplit);
+                            } else {
+                                // If no specific message, add a generic confirmation of code generation/modification
+                                displayMessage('ego', `I have generated/modified the code on the right panel.`, chatHistorySplit);
+                            }
+                        } else { // It's 'two-panel' but didn't return code, likely a textual response from Gemini while in two-panel mode.
+                             displayMessage('ego', data.message, chatHistorySplit);
+                             resetHtmlTabs(); // No code, so hide tabs.
+                        }
+                    } else { // default layout, for general explanations, learning, flowcharts etc.
+                        toggleLayout('default');
+                        displayMessage('ego', data.message, chatHistory);
+                        resetHtmlTabs(); // No code block in default layout context
+                    }
+                } catch (error) {
+                    console.error('Network or server error:', error);
+                    displayMessage('ego', `<span style="color:red;"><i class="fas fa-dizzy"></i> Oops!</span> It seems I lost connection to the server or encountered an unexpected issue: ${error.message}. Please try again.`, isFollowupOnCode ? chatHistorySplit : chatHistory);
+                } finally {
+                    hideSpinner(btnToSend);
+                    inputToClear.value = '';
+                    // Ensure context input is cleared after use
+                    if (!isFollowupOnCode) codeContextInput.value = ''; 
+                    updateSendButtonVisibility();
+                }
+            };
+            
+            // Terminal command execution
+            function executeCommand(command) {
+                return fetch('/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ command: command })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    return data;
+                })
+                .catch(error => {
+                    console.error('Error executing command:', error);
+                    return {
+                        success: false,
+                        output: '',
+                        error: 'Network error: ' + error.message,
+                        exit_code: 1
+                    };
+                });
+            }
+            
+            /**
+             * Display terminal output in the chat with enhanced styling and functionality
+             * @param {string} command - The command that was executed
+             * @param {string} output - The standard output from the command
+             * @param {string} error - The error output from the command
+             * @param {number} exitCode - The exit code of the command
+             * @param {HTMLElement} container - The container to append the terminal output to
+             */
+            function displayTerminalOutput(command, output, error, exitCode, container) {
+                // Create main terminal container with timestamp
+                const terminalDiv = document.createElement('div');
+                terminalDiv.classList.add('terminal-output');
+                terminalDiv.id = 'terminal-' + Date.now();
+                
+                // Add timestamp to the terminal output
+                const timestamp = new Date().toLocaleTimeString();
+                const timestampDiv = document.createElement('div');
+                timestampDiv.style.position = 'absolute';
+                timestampDiv.style.top = '-10px';
+                timestampDiv.style.right = '10px';
+                timestampDiv.style.fontSize = '12px';
+                timestampDiv.style.color = 'var(--text-light)';
+                timestampDiv.style.backgroundColor = '#1a1a1a';
+                timestampDiv.style.padding = '0 8px';
+                timestampDiv.style.borderRadius = '3px';
+                timestampDiv.style.border = '1px solid #333';
+                timestampDiv.textContent = timestamp;
+                terminalDiv.appendChild(timestampDiv);
+                
+                // Command with copy button
+                const commandContainer = document.createElement('div');
+                commandContainer.style.position = 'relative';
+                commandContainer.style.marginBottom = '10px';
+                
+                const commandDiv = document.createElement('div');
+                commandDiv.classList.add('terminal-command');
+                commandDiv.innerHTML = '<span style="color: #f1fa8c;">$</span> ' + escapeHtml(command);
+                commandContainer.appendChild(commandDiv);
+                
+                // Add copy button for command
+                const copyBtn = document.createElement('button');
+                copyBtn.textContent = 'Copy';
+                copyBtn.style.position = 'absolute';
+                copyBtn.style.right = '5px';
+                copyBtn.style.top = '5px';
+                copyBtn.style.padding = '2px 8px';
+                copyBtn.style.fontSize = '12px';
+                copyBtn.style.backgroundColor = 'rgba(80, 250, 123, 0.2)';
+                copyBtn.style.color = '#50fa7b';
+                copyBtn.style.border = 'none';
+                copyBtn.style.borderRadius = '3px';
+                copyBtn.style.cursor = 'pointer';
+                copyBtn.onclick = function() {
+                    navigator.clipboard.writeText(command).then(() => {
+                        copyBtn.textContent = 'Copied!';
+                        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+                    });
+                };
+                commandContainer.appendChild(copyBtn);
+                
+                terminalDiv.appendChild(commandContainer);
+                
+                // Output with syntax highlighting for common formats
+                if (output && output.trim() !== '') {
+                    const outputDiv = document.createElement('div');
+                    outputDiv.classList.add('terminal-success');
+                    
+                    // Check if output is JSON and format it
+                    if (isJsonString(output)) {
+                        try {
+                            const jsonObj = JSON.parse(output);
+                            const formattedJson = JSON.stringify(jsonObj, null, 2);
+                            outputDiv.innerHTML = syntaxHighlightJson(formattedJson);
+                        } catch (e) {
+                            outputDiv.textContent = output;
+                        }
+                    } else {
+                        outputDiv.textContent = output;
+                    }
+                    
+                    terminalDiv.appendChild(outputDiv);
+                }
+                
+                // Error with improved styling
+                if (error && error.trim() !== '') {
+                    const errorContainer = document.createElement('div');
+                    errorContainer.style.marginTop = '10px';
+                    
+                    const errorLabel = document.createElement('div');
+                    errorLabel.textContent = 'Error:';
+                    errorLabel.style.color = '#ff5555';
+                    errorLabel.style.fontWeight = 'bold';
+                    errorLabel.style.marginBottom = '5px';
+                    errorContainer.appendChild(errorLabel);
+                    
+                    const errorDiv = document.createElement('div');
+                    errorDiv.classList.add('terminal-error');
+                    errorDiv.textContent = error;
+                    errorContainer.appendChild(errorDiv);
+                    
+                    terminalDiv.appendChild(errorContainer);
+                }
+                
+                // Exit code with status indicator
+                const exitCodeDiv = document.createElement('div');
+                exitCodeDiv.classList.add('terminal-exit-code');
+                
+                if (exitCode === 0) {
+                    exitCodeDiv.classList.add('success');
+                    exitCodeDiv.innerHTML = '<span style="margin-right: 5px;">✓</span> Exit code: ' + exitCode;
+                } else {
+                    exitCodeDiv.classList.add('error');
+                    exitCodeDiv.innerHTML = '<span style="margin-right: 5px;">✗</span> Exit code: ' + exitCode;
+                }
+                
+                terminalDiv.appendChild(exitCodeDiv);
+                
+                // Add to container and scroll
+                container.appendChild(terminalDiv);
+                container.scrollTop = container.scrollHeight;
+                
+                // Helper function to check if a string is valid JSON
+                function isJsonString(str) {
+                    try {
+                        JSON.parse(str);
+                        return true;
+                    } catch (e) {
+                        return false;
+                    }
+                }
+                
+                // Helper function to escape HTML
+                function escapeHtml(unsafe) {
+                    return unsafe
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/"/g, "&quot;")
+                        .replace(/'/g, "&#039;");
+                }
+                
+                // Helper function to syntax highlight JSON
+                 function syntaxHighlightJson(json) {
+                     json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                     return json.replace(/(""|"[^"]*"(?:\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                         let cls = 'color: #f1fa8c;'; // string - yellow
+                         if (/^"/.test(match)) {
+                             if (/:$/.test(match)) {
+                                 cls = 'color: #ff79c6;'; // key - pink
+                             }
+                         } else if (/true|false/.test(match)) {
+                             cls = 'color: #bd93f9;'; // boolean - purple
+                         } else if (/null/.test(match)) {
+                             cls = 'color: #ff5555;'; // null - red
+                         } else {
+                             cls = 'color: #8be9fd;'; // number - cyan
+                         }
+                         return '<span style="' + cls + '">' + match + '</span>';
+                     });
+                 }
+             }
+            
+            // Terminal output styling
+            document.head.insertAdjacentHTML('beforeend', `
+                <style>
+                    /* Run button hover effect */
+                    .run-code-button:hover {
+                        background-color: var(--secondary-green) !important;
+                        transform: translateY(-1px);
+                        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                    }
+                    
+                    /* Terminal output enhancements */
+                    .terminal-output {
+                        position: relative;
+                        border: 1px solid var(--border-color);
+                        margin-top: 15px !important;
+                        max-height: 300px;
+                        overflow-y: auto;
+                    }
+                    
+                    .terminal-output::before {
+                        content: 'Terminal Output';
+                        position: absolute;
+                        top: -10px;
+                        left: 10px;
+                        background-color: var(--bg-color);
+                        padding: 0 5px;
+                        font-size: 12px;
+                        color: var(--text-light);
+                    }
+                </style>
+            `);
+            
+            // Terminal output visibility enhancement
+            function ensureTerminalVisibility(container) {
+                if (currentLayout === 'two-panel') {
+                    setTimeout(() => {
+                        const terminalOutput = container.querySelector('.terminal-output:last-child');
+                        if (terminalOutput) {
+                            // Ensure visibility with animation
+                            terminalOutput.style.display = 'block';
+                            terminalOutput.style.visibility = 'visible';
+                            terminalOutput.style.opacity = '0';
+                            terminalOutput.style.transform = 'translateY(20px)';
+                            terminalOutput.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                            
+                            // Trigger animation
+                            setTimeout(() => {
+                                terminalOutput.style.opacity = '1';
+                                terminalOutput.style.transform = 'translateY(0)';
+                            }, 10);
+                            
+                            // Scroll to the terminal output
+                            terminalOutput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            
+                            // Make sure the terminal tab is visible if it exists
+                            const terminalTab = document.querySelector('[data-tab="terminal"]');
+                            if (terminalTab && previewDisplay && !previewDisplay.classList.contains('hidden')) {
+                                // Force terminal content to be visible
+                                const terminalContent = document.getElementById('terminal-output-area');
+                                if (terminalContent) {
+                                    terminalContent.style.display = 'block';
+                                    terminalContent.style.visibility = 'visible';
+                                    terminalContent.style.opacity = '1';
+                                    terminalContent.style.height = 'auto';
+                                    terminalContent.style.minHeight = '200px';
+                                }
+                            }
+                            
+                            // Add collapsible functionality to terminal output
+                            addTerminalCollapse(terminalOutput);
+                        }
+                    }, 100);
+                }
+            }
+            
+            // Add collapsible functionality to terminal output
+            function addTerminalCollapse(terminalOutput) {
+                // Add collapse/expand button
+                const collapseBtn = document.createElement('button');
+                collapseBtn.textContent = '−'; // Minus sign
+                collapseBtn.title = 'Collapse/Expand';
+                collapseBtn.style.position = 'absolute';
+                collapseBtn.style.top = '-10px';
+                collapseBtn.style.left = '80px';
+                collapseBtn.style.width = '20px';
+                collapseBtn.style.height = '20px';
+                collapseBtn.style.padding = '0';
+                collapseBtn.style.backgroundColor = '#1a1a1a';
+                collapseBtn.style.color = '#bd93f9';
+                collapseBtn.style.border = '1px solid #333';
+                collapseBtn.style.borderRadius = '3px';
+                collapseBtn.style.cursor = 'pointer';
+                collapseBtn.style.fontSize = '16px';
+                collapseBtn.style.lineHeight = '16px';
+                collapseBtn.style.textAlign = 'center';
+                
+                let isCollapsed = false;
+                const contentElements = [];
+                
+                // Get all content elements except the command
+                for (let i = 1; i < terminalOutput.children.length; i++) {
+                    contentElements.push(terminalOutput.children[i]);
+                }
+                
+                collapseBtn.onclick = function() {
+                    isCollapsed = !isCollapsed;
+                    
+                    if (isCollapsed) {
+                        collapseBtn.textContent = '+'; // Plus sign
+                        contentElements.forEach(el => {
+                            el.style.display = 'none';
+                        });
+                        terminalOutput.style.maxHeight = 'auto';
+                    } else {
+                        collapseBtn.textContent = '−'; // Minus sign
+                        contentElements.forEach(el => {
+                            el.style.display = 'block';
+                        });
+                    }
+                };
+                
+                terminalOutput.appendChild(collapseBtn);
+            }
+            
+            // Call ensureTerminalVisibility after displaying terminal output
+            const originalDisplayTerminalOutput = displayTerminalOutput;
+            displayTerminalOutput = function(command, output, error, exitCode, container) {
+                // Call the original function
+                originalDisplayTerminalOutput(command, output, error, exitCode, container);
+                
+                // Ensure terminal visibility
+                ensureTerminalVisibility(container);
+                }
+            })
+            
+            // Add run buttons to code blocks in messages
+            const originalDisplayMessage = displayMessage;
+            displayMessage = function(role, content, container) {
+                // Call the original function
+                originalDisplayMessage(role, content, container);
+                
+                // Find the last message added
+                const lastMessage = container.lastElementChild;
+                if (!lastMessage) return;
+                
+                // Find all code blocks in the message
+                const codeBlocks = lastMessage.querySelectorAll('.message-content pre');
+                codeBlocks.forEach(pre => {
+                    // Skip if it's a mermaid diagram
+                    if (pre.classList.contains('mermaid') || pre.querySelector('.mermaid')) return;
+                    
+                    // Check if it's a runnable language (bash, shell, python, etc.)
+                    const code = pre.querySelector('code');
+                    if (!code) return;
+                    
+                    const language = code.className.replace('language-', '').toLowerCase();
+                    const runnableLanguages = ['bash', 'sh', 'shell', 'python', 'python3', 'node', 'javascript', 'js'];
+                    
+                    if (runnableLanguages.includes(language)) {
+                        // Add run button if not already present
+                        if (!pre.querySelector('.run-code-button')) {
+                            const runButton = document.createElement('button');
+                            runButton.classList.add('run-code-button');
+                            runButton.textContent = 'Run';
+                            runButton.style.position = 'absolute';
+                            runButton.style.top = '5px';
+                            runButton.style.right = '5px';
+                            runButton.style.padding = '3px 8px';
+                            runButton.style.backgroundColor = 'var(--primary-green)';
+                            runButton.style.color = '#000';
+                            runButton.style.border = 'none';
+                            runButton.style.borderRadius = '4px';
+                            runButton.style.cursor = 'pointer';
+                            runButton.style.fontSize = '12px';
+                            runButton.style.fontWeight = 'bold';
+                            runButton.style.zIndex = '10';
+                            
+                            // Make sure pre has position relative for absolute positioning of button
+                            pre.style.position = 'relative';
+                            pre.appendChild(runButton);
+                            
+                            // Add click event directly to the button
+                            runButton.addEventListener('click', function() {
+                                const command = code.textContent.trim();
+                                if (!command) return;
+                                
+                                // Show loading state
+                                this.disabled = true;
+                                this.textContent = 'Running...';
+                                
+                                // Execute the command
+                                executeCommand(command).then(result => {
+                                    // Display the result
+                                    const messageContent = this.closest('.message-content');
+                                    displayTerminalOutput(command, result.output, result.error, result.exit_code, messageContent);
+                                    
+                                    // Reset button state
+                                    this.disabled = false;
+                                    this.textContent = 'Run';
+                                    
+                                    // Ensure the terminal output is visible
+                                    setTimeout(() => {
+                                        const terminalOutput = messageContent.querySelector('.terminal-output');
+                                        if (terminalOutput) {
+                                            terminalOutput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                        }
+                                    }, 100);
+                                });
+                            });
+                        }
+                    }
+                });
+            };
+            
+            // Initial UI setup
+            updateSendButtonVisibility();
+            updateSendButtonPlacement();
+            
+            // Handle code editing and maintain syntax highlighting
+            const codePreElement = document.querySelector('#code-display pre');
+            
+            // Check if codePreElement exists before proceeding
+            if (codePreElement) {
+                // Make code pre element editable with proper attributes
+                codePreElement.setAttribute('contenteditable', 'true');
+                codePreElement.setAttribute('spellcheck', 'false');
+                codePreElement.setAttribute('autocorrect', 'off');
+                codePreElement.setAttribute('autocapitalize', 'off');
+                codePreElement.setAttribute('data-gramm', 'false'); // Disable Grammarly
+                codePreElement.style.whiteSpace = 'pre';
+                codePreElement.style.tabSize = '4';
+            
+            // Create line numbers container with improved styling
+            const lineNumbersContainer = document.createElement('div');
+            lineNumbersContainer.className = 'line-numbers';
+            lineNumbersContainer.style.position = 'absolute';
+            lineNumbersContainer.style.left = '0';
+            lineNumbersContainer.style.top = '0';
+            lineNumbersContainer.style.bottom = '0';
+            lineNumbersContainer.style.width = '40px';
+            lineNumbersContainer.style.backgroundColor = 'var(--code-bg)';
+            lineNumbersContainer.style.borderRight = '1px solid var(--border-color)';
+            lineNumbersContainer.style.color = 'var(--text-light)';
+            lineNumbersContainer.style.fontSize = '12px';
+            lineNumbersContainer.style.textAlign = 'right';
+            lineNumbersContainer.style.paddingTop = '5px';
+            lineNumbersContainer.style.paddingRight = '5px';
+            lineNumbersContainer.style.userSelect = 'none';
+            lineNumbersContainer.style.overflow = 'hidden';
+            lineNumbersContainer.id = 'line-numbers-container';
+            
+            // Add line numbers container to code display
+            const codeDisplay = document.getElementById('code-display');
+            if (codeDisplay) {
+                codeDisplay.style.position = 'relative';
+                if (codePreElement) {
+                    codeDisplay.insertBefore(lineNumbersContainer, codePreElement);
+                    
+                    // Add padding to code pre element to make room for line numbers
+                    codePreElement.style.paddingLeft = '50px';
+                } else {
+                    console.error('Code pre element not found');
+                }
+            } else {
+                console.error('Code display element not found');
+            }
+            
+            // Function to update line numbers with improved implementation
+            function updateLineNumbers() {
+                // Safety check
+                if (!codePreElement || !lineNumbersContainer) {
+                    console.error('Required elements for line numbers not found');
+                    return;
+                }
+                
+                const code = codePreElement.textContent;
+                const lines = code.split('\n');
+                const lineCount = lines.length;
+                
+                // Clear existing line numbers
+                lineNumbersContainer.innerHTML = '';
+                
+                // Add new line numbers with improved styling
+                for (let i = 1; i <= lineCount; i++) {
+                    const lineNumber = document.createElement('div');
+                    lineNumber.textContent = i;
+                    lineNumber.style.padding = '0 8px';
+                    lineNumber.style.height = '1.5em';
+                    lineNumber.style.lineHeight = '1.5em';
+                    lineNumber.style.color = 'var(--text-light)';
+                    lineNumber.style.fontFamily = 'monospace';
+                    lineNumber.dataset.lineNumber = i;
+                    lineNumbersContainer.appendChild(lineNumber);
+                }
+            }
+            
+            // Function to re-apply syntax highlighting after edits while preserving cursor position
+            function updateCodeHighlighting() {
+                // Store the current code
+                const code = codePreElement.textContent;
+                
+                // Save cursor position
+                const selection = window.getSelection();
+                const range = selection.getRangeAt(0);
+                
+                // Get information about the cursor position
+                const preRect = codePreElement.getBoundingClientRect();
+                const selectionRect = range.getBoundingClientRect();
+                
+                // Calculate relative position as percentage
+                const relativeTop = (selectionRect.top - preRect.top) / preRect.height;
+                const relativeLeft = (selectionRect.left - preRect.left) / preRect.width;
+                
+                // Store text offset
+                const offset = range.startOffset;
+                const startContainer = range.startContainer;
+                
+                // Update the current displayed code variable
+                currentDisplayedCode = code;
+                
+                // Re-apply syntax highlighting
+                highlightedCodeBlock.textContent = code;
+                hljs.highlightElement(highlightedCodeBlock);
+                
+                // Update line numbers
+                updateLineNumbers();
+                
+                // If this is HTML code, update the preview
+                if (currentCodeLanguage.toLowerCase() === 'html' && !codeTabs.classList.contains('hidden')) {
+                    htmlPreviewFrame.srcdoc = code;
+                }
+                
+                // Restore cursor position
+                setTimeout(() => {
+                    try {
+                        // Try to restore by node and offset if possible
+                        if (startContainer.nodeType === Node.TEXT_NODE) {
+                            // Find the corresponding text node
+                            const textNodes = [];
+                            const walker = document.createTreeWalker(
+                                codePreElement,
+                                NodeFilter.SHOW_TEXT,
+                                null,
+                                false
+                            );
+                            
+                            let node;
+                            while (node = walker.nextNode()) {
+                                textNodes.push(node);
+                            }
+                            
+                            if (textNodes.length > 0) {
+                                // Find the best matching text node
+                                const newRange = document.createRange();
+                                const newOffset = Math.min(offset, textNodes[0].length);
+                                newRange.setStart(textNodes[0], newOffset);
+                                newRange.setEnd(textNodes[0], newOffset);
+                                
+                                selection.removeAllRanges();
+                                selection.addRange(newRange);
+                            }
+                        } else {
+                            // Fallback to position-based restoration
+                            const newRange = document.createRange();
+                            const nodeStack = [codePreElement];
+                            let foundNode = null;
+                            let charCount = 0;
+                            
+                            while (nodeStack.length > 0) {
+                                const node = nodeStack.pop();
+                                
+                                if (node.nodeType === Node.TEXT_NODE) {
+                                    const nextCharCount = charCount + node.length;
+                                    if (offset >= charCount && offset <= nextCharCount) {
+                                        foundNode = node;
+                                        break;
+                                    }
+                                    charCount = nextCharCount;
+                                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                                    for (let i = node.childNodes.length - 1; i >= 0; i--) {
+                                        nodeStack.push(node.childNodes[i]);
+                                    }
+                                }
+                            }
+                            
+                            if (foundNode) {
+                                const newOffset = Math.min(offset - charCount, foundNode.length);
+                                newRange.setStart(foundNode, newOffset);
+                                newRange.setEnd(foundNode, newOffset);
+                                selection.removeAllRanges();
+                                selection.addRange(newRange);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error restoring cursor position:', e);
+                    }
+                }, 10);
+            }
+            
+            // Add event listeners for code editing
+            codePreElement.addEventListener('input', () => {
+                // Use a small delay to allow the DOM to update
+                setTimeout(updateCodeHighlighting, 10);
+            });
+            
+            // Add a keyboard shortcut (Ctrl+S or Cmd+S) to manually trigger highlighting
+            codePreElement.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault(); // Prevent browser save dialog
+                    updateCodeHighlighting();
+                }
+                
+                // Handle tab key for indentation
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    document.execCommand('insertText', false, '    ');
+                    updateCodeHighlighting();
+                }
+                
+                // Add line numbers when Enter is pressed
+                if (e.key === 'Enter') {
+                    // Let the default behavior happen first
+                    setTimeout(() => {
+                        updateCodeHighlighting();
+                    }, 10);
+                }
+            });
+            
+            // Prevent cursor position issues when clicking in the code area
+            codePreElement.addEventListener('click', () => {
+                // Ensure the click doesn't disrupt the editing experience
+                codePreElement.focus();
+            });
+            
+            // Initialize line numbers
+            updateLineNumbers();
+            }
+         else {
+            console.error('Error: code pre element not found in code-display');
+        }
+        ;
+    </script>
+</body>
+</html>
